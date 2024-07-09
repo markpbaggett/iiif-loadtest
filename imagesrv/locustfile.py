@@ -5,23 +5,59 @@ import imageBuilder
 
 images = []
 
-for handler in logging.root.handlers[:]:
-    logging.root.removeHandler(handler)
-
-logging.basicConfig(
-    filename='test.log',
-    filemode='a',
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    datefmt='%Y-%m-%d %H:%M:%S',
-    level=logging.WARNING
-)
-
 logger = logging.getLogger(__name__)
-file_handler = logging.FileHandler('july8_all_am.log')
-file_handler.setLevel(logging.WARNING)
-formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
-file_handler.setFormatter(formatter)
-logger.addHandler(file_handler)
+
+@events.init_command_line_parser.add_listener
+def _(parser):
+    parser.add_argument("--url-list", type=str, env_var="URL_LIST", default="", help="File of URLs to info.jsons")
+    parser.add_argument("--log-file", type=str, env_var="LOG_FILE", default="default.log", help="Log file name")
+    parser.add_argument("--log-level", type=str, env_var="LOG_LEVEL", default="WARNING", help="Log level")
+
+@events.test_start.add_listener
+def on_test_start(environment, **kwargs):
+    try:
+        log_file = environment.parsed_options.log_file
+        log_level = environment.parsed_options.log_level
+
+        logging_levels = {
+            "DEBUG": logging.DEBUG,
+            "INFO": logging.INFO,
+            "WARNING": logging.WARNING,
+            "ERROR": logging.ERROR,
+            "CRITICAL": logging.CRITICAL
+        }
+
+        logging_level = logging_levels.get(log_level, logging.WARNING)
+
+        for handler in logging.root.handlers[:]:
+            logging.root.removeHandler(handler)
+
+        logging.basicConfig(
+            filename=log_file,
+            filemode='a',
+            format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+            datefmt='%Y-%m-%d %H:%M:%S',
+            level=logging_level
+        )
+
+        file_handler = logging.FileHandler(log_file)
+        file_handler.setLevel(logging_level)
+        formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
+        file_handler.setFormatter(formatter)
+        logger.addHandler(file_handler)
+
+        with open(environment.parsed_options.url_list, 'r') as fh:
+            for line in fh:
+                url = line.replace('\n', '')
+                if not url.endswith('/info.json'):
+                    print(f"Skipping {url} as it doesn't end with '/info.json'")
+                else:
+                    images.append(url)
+        if len(images) == 0:
+            environment.runner.quit()
+    except Exception as error:
+        print(error)
+        environment.runner.quit()
 
 @events.request.add_listener
 def log_request(request_type, name, response_time, response_length, response, context, exception, start_time, url,
@@ -36,39 +72,14 @@ def log_request(request_type, name, response_time, response_length, response, co
     except Exception as e:
         print(f"Logging error: {e}")
 
-@events.init_command_line_parser.add_listener
-def _(parser):
-    parser.add_argument("--url-list", type=str, env_var="URL_LIST", default="", help="File of URLs to info.jsons")
-
-
-@events.test_start.add_listener
-def on_test_start(environment, **kwargs):
-    try:
-        with open(environment.parsed_options.url_list, 'r') as fh:
-            for line in fh:
-                url = line.replace('\n', '')
-                if not url.endswith('/info.json'):
-                    print(f"Skipping {url} as it doesn't end with '/info.json'")
-                else:
-                    images.append(url)
-        if len(images) == 0:
-            environment.runner.quit()
-    except Exception as error:
-        print(error)
-        environment.runner.quit()
-
-
 def identifier(url):
     return url[:-1 * len('/info.json')]
-
 
 def rndImage():
     return images[random.randint(0, len(images) - 1)]
 
-
 def rndImageIdentifier():
     return identifier(rndImage())
-
 
 class IIIFURLTester(FastHttpUser):
     @task(6)

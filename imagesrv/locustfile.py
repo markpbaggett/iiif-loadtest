@@ -1,5 +1,5 @@
 import logging
-from locust import FastHttpUser, task, events
+from locust import FastHttpUser, events, task
 import random
 import imageBuilder
 
@@ -12,6 +12,7 @@ def _(parser):
     parser.add_argument("--url-list", type=str, env_var="URL_LIST", default="", help="File of URLs to info.jsons")
     parser.add_argument("--log-file", type=str, env_var="LOG_FILE", default="default.log", help="Log file name")
     parser.add_argument("--log-level", type=str, env_var="LOG_LEVEL", default="WARNING", help="Log level")
+    parser.add_argument("--tasks", type=str, env_var="TASKS", default="", help="Comma-separated list of tasks to run")
 
 @events.test_start.add_listener
 def on_test_start(environment, **kwargs):
@@ -82,17 +83,16 @@ def rndImageIdentifier():
     return identifier(rndImage())
 
 class IIIFURLTester(FastHttpUser):
-    @task(6)
+    tasks = []
+
     def getMiradorThumbnail(self):
         url = f"{rndImageIdentifier()}/full/,120/0/default.jpg"
         self.client.get(url, name="Mirador thumbnail")
 
-    @task(6)
     def getUVThumbnail(self):
         url = f"{rndImageIdentifier()}/full/90,/0/default.jpg"
         self.client.get(url, name="UV thumbnail")
 
-    @task(6)
     def getThumbnailPanel(self):
         with self.client.get(rndImage(), name="info.json") as response:
             response.encoding = "utf-8"
@@ -116,7 +116,6 @@ class IIIFURLTester(FastHttpUser):
                 url = imageBuilder.constructURL(info, 'full', width=width, height=height, bounded=True)
             self.client.get(url, name="Thumbnail panel thumbnail")
 
-    @task(3)
     def zoomToPoint(self):
         with self.client.get(rndImage(), name="info.json") as response:
             response.encoding = "utf-8"
@@ -127,7 +126,6 @@ class IIIFURLTester(FastHttpUser):
                 url = imageBuilder.constructURL(info, region, size=size)
                 self.client.get(url, name="Zoom to point")
 
-    @task(2)
     def virtualReading(self):
         with self.client.get(rndImage(), name="info.json") as response:
             response.encoding = "utf-8"
@@ -145,7 +143,6 @@ class IIIFURLTester(FastHttpUser):
                             url = imageBuilder.constructURL(info, region, size=size)
                             self.client.get(url, name="Virtual Reading")
 
-    @task(1)
     def customRegion(self):
         with self.client.get(rndImage(), name="info.json") as response:
             response.encoding = "utf-8"
@@ -157,7 +154,6 @@ class IIIFURLTester(FastHttpUser):
             url = imageBuilder.constructURL(info, f'{x},{y},{width},{height}', size=f"{width},{height}")
             self.client.get(url, name="Custom region")
 
-    @task(5)
     def fullImageSized(self):
         sizes = [",200", "150,", "200,", "400,", "650,", "675,", "800,", "!1024,1024"]
         with self.client.get(rndImage(), name="info.json") as response:
@@ -173,7 +169,6 @@ class IIIFURLTester(FastHttpUser):
             url = f"{rndImageIdentifier()}/full/{size}/0/default.jpg"
             self.client.get(url, name="Full image scaled")
 
-    @task(4)
     def fullImage(self):
         with self.client.get(rndImage(), name="info.json") as response:
             response.encoding = "utf-8"
@@ -181,7 +176,6 @@ class IIIFURLTester(FastHttpUser):
             url = imageBuilder.constructURL(info, 'full', size="full")
             self.client.get(url, name="Full/full image request")
 
-    @task(7)
     def halfScale(self):
         with self.client.get(rndImage(), name="info.json") as response:
             response.encoding = "utf-8"
@@ -189,7 +183,30 @@ class IIIFURLTester(FastHttpUser):
             url = imageBuilder.constructURL(info, 'full', size="pct:50")
             self.client.get(url, name="Full/full image request at half scale")
 
-    @task(8)
     def grayScale(self):
         url = f"{rndImageIdentifier()}/full/full/0/gray.jpg"
         self.client.get(url, name="Full image gray scale")
+
+@events.init.add_listener
+def _(environment, **kwargs):
+    tasks_arg = environment.parsed_options.tasks
+    if tasks_arg:
+        tasks_to_run = tasks_arg.split(",")
+    else:
+        tasks_to_run = ["getMiradorThumbnail", "getUVThumbnail", "getThumbnailPanel", "zoomToPoint",
+                        "virtualReading", "customRegion", "fullImageSized", "fullImage", "halfScale", "grayScale"]
+
+    task_mapping = {
+        "getMiradorThumbnail": IIIFURLTester.getMiradorThumbnail,
+        "getUVThumbnail": IIIFURLTester.getUVThumbnail,
+        "getThumbnailPanel": IIIFURLTester.getThumbnailPanel,
+        "zoomToPoint": IIIFURLTester.zoomToPoint,
+        "virtualReading": IIIFURLTester.virtualReading,
+        "customRegion": IIIFURLTester.customRegion,
+        "fullImageSized": IIIFURLTester.fullImageSized,
+        "fullImage": IIIFURLTester.fullImage,
+        "halfScale": IIIFURLTester.halfScale,
+        "grayScale": IIIFURLTester.grayScale,
+    }
+
+    IIIFURLTester.tasks = [task_mapping[task_name] for task_name in tasks_to_run]

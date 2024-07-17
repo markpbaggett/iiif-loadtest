@@ -36,6 +36,18 @@ This will start the locust web server at [http://0.0.0.0:8089/](http://0.0.0.0:8
 locust -f imagesrv/locustfile.py -t 1m --only-summary -u 10 --headless --url-list data/iiif-reference.txt -H https://iiif.io 
 ```
 
+If you want to log to a file rather than just the terminal, you can specify the file and the log level to serialize:
+
+```
+locust -f imagesrv/locustfile.py --url-list ~/tamu-image_server_tests/sage_random_new.txt -H https://api.library.tamu.edu/ --log-file tamu_july_17.log --log-level WARNING
+```
+
+If you only want to run certain tasks (by default all tasks are run), you can add a comma separated list:
+
+```
+locust -f imagesrv/locustfile.py --url-list ~/tamu-image_server_tests/sage_random_new.txt -H https://api.library.tamu.edu/ --log-file tamu_july_17.log --log-level WARNING --tasks virtualReading,zoomToPoint
+```
+
 Where:
  * -f is the location of the locustfile
  * -t is the time to run the tests
@@ -45,6 +57,22 @@ Where:
  * --url-list location of the data file containing a list of info.json URLs (without the host)
 
 For a full list of command line options see the [Locust Command line documentation](https://docs.locust.io/en/stable/configuration.html)
+
+The defined tasks are:
+
+* `getMiradorThumbnail`
+* `getUVThumbnail`
+* `getThumbnailPanel`
+* `zoomToPoint`
+* `virtualReading`
+* `customRegion`
+* `fullImageSized`
+* `fullImage`
+* `halfScale`
+* `grayScale`
+* `bitonalQuality`
+* `mirroringFull`
+* `rotationRandomSize`
 
 ## Other scripts
 

@@ -177,15 +177,30 @@ class IIIFURLTester(FastHttpUser):
             self.client.get(url, name="Full/full image request")
 
     def halfScale(self):
-        with self.client.get(rndImage(), name="info.json") as response:
-            response.encoding = "utf-8"
-            info = response.json()
-            url = imageBuilder.constructURL(info, 'full', size="pct:50")
-            self.client.get(url, name="Full/full image request at half scale")
+        url = f"{rndImageIdentifier()}/full/pct:50/0/default.jpg"
+        self.client.get(url, name="Full image request at half scale")
 
     def grayScale(self):
         url = f"{rndImageIdentifier()}/full/full/0/gray.jpg"
         self.client.get(url, name="Full image gray scale")
+
+    def bitonalQuality(self):
+        url = f"{rndImageIdentifier()}/full/full/0/bitonal.jpg"
+        self.client.get(url, name="Full image but bitonal scale")
+
+    def mirroringFull(self):
+        url = f"{rndImageIdentifier()}/full/full/!0/default.jpg"
+        self.client.get(url, name="Full image but mirrored")
+
+    def rotationRandomSize(self):
+        with self.client.get(rndImage(), name="info.json") as response:
+            response.encoding = "utf-8"
+            info = response.json()
+            size = random.choice(info['sizes'])
+            rotations = (0, 90, 180, 270)
+            rotation = random.choice(rotations)
+            url = f"{info['@id']}/full/{size['width']},{size['height']}/{rotation}/default.jpg"
+            self.client.get(url, name=f"Rotate image")
 
 @events.init.add_listener
 def _(environment, **kwargs):
@@ -194,7 +209,8 @@ def _(environment, **kwargs):
         tasks_to_run = tasks_arg.split(",")
     else:
         tasks_to_run = ["getMiradorThumbnail", "getUVThumbnail", "getThumbnailPanel", "zoomToPoint",
-                        "virtualReading", "customRegion", "fullImageSized", "fullImage", "halfScale", "grayScale"]
+                        "virtualReading", "customRegion", "fullImageSized", "fullImage", "halfScale", "grayScale",
+                        "bitonalQuality", "mirroringFull", "rotationRandomSize"]
 
     task_mapping = {
         "getMiradorThumbnail": IIIFURLTester.getMiradorThumbnail,
@@ -207,6 +223,9 @@ def _(environment, **kwargs):
         "fullImage": IIIFURLTester.fullImage,
         "halfScale": IIIFURLTester.halfScale,
         "grayScale": IIIFURLTester.grayScale,
+        "bitonalQuality": IIIFURLTester.bitonalQuality,
+        "mirroringFull": IIIFURLTester.mirroringFull,
+        "rotationRandomSize": IIIFURLTester.rotationRandomSize
     }
 
     IIIFURLTester.tasks = [task_mapping[task_name] for task_name in tasks_to_run]

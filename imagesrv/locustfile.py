@@ -65,13 +65,15 @@ def log_request(request_type, name, response_time, response_length, response, co
                 **kwargs):
     try:
         if exception:
-            logger.error(f"FAILURE: {request_type} {name} {response_time} {exception} at {start_time}")
+            logger.error(f"FAILURE: {request_type} {name} {response_time} {exception} at {start_time} for {url}")
         elif response_time > 20000:
             logger.warning(f"Long Request: {name} took {response_time} for {url} at {start_time}")
+        elif response_time > 1000:
+            logger.warning(f"At least a second: {name} took {response_time} for {url} at {start_time}")
         else:
-            logger.info(f"Request: {request_type} {name} {response_time}")
+            logger.info(f"Request: {request_type} {name} {response_time} for {url}.")
     except Exception as e:
-        print(f"Logging error: {e}")
+        print(f"Logging error: {e} for {url}")
 
 def identifier(url):
     return url[:-1 * len('/info.json')]

@@ -88,12 +88,20 @@ class IIIFURLTester(FastHttpUser):
     tasks = []
 
     def getMiradorThumbnail(self):
+        """Swarms for Mirador Thumbnail Patterns"""
         url = f"{rndImageIdentifier()}/full/,120/0/default.jpg"
         self.client.get(url, name="Mirador thumbnail")
 
     def getUVThumbnail(self):
+        """Swarms for Universal Viewer Thumbnail Patterns"""
         url = f"{rndImageIdentifier()}/full/90,/0/default.jpg"
         self.client.get(url, name="UV thumbnail")
+
+    def getSageThumbnail(self):
+        """Swarms for SAGE Thumbnail Patterns"""
+        "https://api.library.tamu.edu/iiif/2/6a7f9717-4444-33cf-8e3d-70008d1079e2/full/!200,200/0/default.jpg"
+        url = f"{rndImageIdentifier()}/full/!200,200/0/default.jpg"
+        self.client.get(url, name="Sage thumbnail")
 
     def getThumbnailPanel(self):
         with self.client.get(rndImage(), name="info.json") as response:
@@ -210,7 +218,7 @@ def _(environment, **kwargs):
     if tasks_arg:
         tasks_to_run = tasks_arg.split(",")
     else:
-        tasks_to_run = ["getMiradorThumbnail", "getUVThumbnail", "getThumbnailPanel", "zoomToPoint",
+        tasks_to_run = ["getMiradorThumbnail", "getUVThumbnail", "getSageThumbnail", "getThumbnailPanel", "zoomToPoint",
                         "virtualReading", "customRegion", "fullImageSized", "fullImage", "halfScale", "grayScale",
                         "bitonalQuality", "mirroringFull", "rotationRandomSize"]
 
@@ -218,6 +226,7 @@ def _(environment, **kwargs):
         "getMiradorThumbnail": IIIFURLTester.getMiradorThumbnail,
         "getUVThumbnail": IIIFURLTester.getUVThumbnail,
         "getThumbnailPanel": IIIFURLTester.getThumbnailPanel,
+        "getSageThumbnail": IIIFURLTester.getSageThumbnail,
         "zoomToPoint": IIIFURLTester.zoomToPoint,
         "virtualReading": IIIFURLTester.virtualReading,
         "customRegion": IIIFURLTester.customRegion,

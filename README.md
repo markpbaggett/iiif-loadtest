@@ -62,6 +62,7 @@ The defined tasks are:
 
 * `getMiradorThumbnail`
 * `getUVThumbnail`
+* `getSageThumbnail`
 * `getThumbnailPanel`
 * `zoomToPoint`
 * `virtualReading`
